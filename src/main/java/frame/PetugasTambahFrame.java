@@ -177,6 +177,7 @@ public class PetugasTambahFrame extends javax.swing.JFrame {
              ps.executeUpdate();  
        } catch (SQLException ex) {
              System.err.println(ex);
+             System.err.println(ex.getMessage());
        }
        dispose(); 
     }//GEN-LAST:event_bSimpanActionPerformed

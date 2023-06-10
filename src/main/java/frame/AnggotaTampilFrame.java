@@ -1,76 +1,101 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
 package frame;
 
 import db.Koneksi;
+import java.io.IOException;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import model.Anggota;
 import model.Petugas;
 
-public class PetugasTampilFrame extends javax.swing.JFrame {
+/**
+ *
+ * @author Rad
+ */
+public class AnggotaTampilFrame extends javax.swing.JFrame {
 
-    /**
-     * Creates new form PetugasTampilFrame
-     */
-    Petugas petugas;
+    Anggota anggota;
     
-    public PetugasTampilFrame() {
+    public AnggotaTampilFrame() {
         initComponents();
         setLocationRelativeTo(null);
         resetTable("");
     }
     
-    public ArrayList<Petugas> getPetugasList(String keyword){
-        ArrayList<Petugas> petugasList = new ArrayList<Petugas>();
+    public ArrayList<Anggota> getAnggotaList(String keyword){
+        ArrayList<Anggota> anggotaList = new ArrayList<Anggota>();
         Koneksi koneksi = new Koneksi();
         Connection connection = koneksi.getConnection();
         
-        String query = "SELECT * FROM petugas "+keyword;
-        Statement st;
+        PreparedStatement ps;
         ResultSet rs;
+        String query = "SELECT anggota.*, petugas.* FROM anggota"
+                    + "INNER JOIN petugas ON anggota.id_petugas = petugas.id ";
+        String order = " ORDER BY anggota.id";
+        if(!keyword.equals(""))
+             query = query+ "WHERE anggota.id = ? OR nama_anggota like ?";
         
+        query = query+order;
         try {
-            st = connection.createStatement();
-            rs = st.executeQuery(query);
-            while (rs.next()){
-                petugas = new Petugas(
-                        rs.getInt("id"),
-                        rs.getString("nama_petugas"),
-                        rs.getString("username"),
-                        rs.getString("password"));
-                petugasList.add(petugas);
+            ps = connection.prepareStatement(query);
+             if (!keyword.equals("")){
+                 ps.setString(1, eCari.getText());
+                 ps.setString(2,"%"+eCari.getText()+"%");
+             }
+            rs = ps.executeQuery();
+            while(rs.next()){
+                anggota = new Anggota(
+                        rs.getString("anggota.id"),
+                        rs.getString("nama_anggota"),
+                        rs.getString("jenis_kelamin"),
+                        rs.getString("tanggal_lahir"),
+                        rs.getString("agama"),
+                        rs.getString("id_petugas"),
+                        rs.getString("petugas.nama_petugas"),
+                        rs.getBlob("foto_anggota"));
+                anggotaList.add(anggota);
             }
-        } catch (SQLException | NullPointerException ex) {
-            System.err.println("Koneksi Null Gagal");
-            System.err.println(ex.getMessage());
+        } catch (SQLException ex) {
+            System.err.println("ERROR getAnggotaList : "+ex);
         }
-        return petugasList;
+        return anggotaList;
     }
     
-    public void selectPetugas(String keyword){
-        ArrayList<Petugas> list = getPetugasList(keyword);
-        DefaultTableModel model = (DefaultTableModel)tPetugas.getModel();
-        Object [] row = new Object[4];
+    public void selectAnggota(String keyword){
+        ArrayList<Anggota> list = getAnggotaList(keyword);
+        DefaultTableModel model = (DefaultTableModel)tAnggota.getModel();
+        Object[] row = new Object[8];
         
         for (int i = 0; i < list.size(); i++){
             row[0] = list.get(i).getId();
-            row[1] = list.get(i).getNamaPetugas();
-            row[2] = list.get(i).getUsername();
-            row[3] = list.get(i).getPassword();
+            row[1] = list.get(i).getNamaAnggota();
+            row[2] = list.get(i).getJenisKelamin();
+            row[3] = list.get(i).getTanggalLahir();
+            row[4] = list.get(i).getAgama();
+            row[5] = list.get(i).getPetugas().getId();
+            row[6] = list.get(i).getPetugas().getNamaPetugas();
+            row[7] = list.get(i).getFotoAnggota();
             
             model.addRow(row);
         }
     }
     
     public final void resetTable(String keyword){
-        DefaultTableModel model = (DefaultTableModel)tPetugas.getModel();
+        DefaultTableModel model = (DefaultTableModel)tAnggota.getModel();
         model.setRowCount(0);
-        selectPetugas(keyword);
+        selectAnggota(keyword);
     }
 
     /**
@@ -86,7 +111,7 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
         eCari = new javax.swing.JTextField();
         bCari = new javax.swing.JButton();
         scrollPane = new javax.swing.JScrollPane();
-        tPetugas = new javax.swing.JTable();
+        tAnggota = new javax.swing.JTable();
         bTambah = new javax.swing.JButton();
         bUbah = new javax.swing.JButton();
         bHapus = new javax.swing.JButton();
@@ -109,17 +134,17 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
             }
         });
 
-        tPetugas.setModel(new javax.swing.table.DefaultTableModel(
+        tAnggota.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
-                "Id", "Nama Petugas", "Username", "Password"
+                "Id", "Nama Anggota", "Jenis Kelamin", "Tanggal Lahir", "Agama", "Id Petugas", "Petugas", "Foto Petugas"
             }
         ));
-        scrollPane.setViewportView(tPetugas);
-        if (tPetugas.getColumnModel().getColumnCount() > 0) {
-            tPetugas.getColumnModel().getColumn(0).setMaxWidth(35);
+        scrollPane.setViewportView(tAnggota);
+        if (tAnggota.getColumnModel().getColumnCount() > 0) {
+            tAnggota.getColumnModel().getColumn(0).setMaxWidth(80);
         }
 
         bTambah.setText("Tambah");
@@ -137,6 +162,7 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
         });
 
         bHapus.setText("Hapus");
+        bHapus.setToolTipText("");
         bHapus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bHapusActionPerformed(evt);
@@ -164,20 +190,21 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 541, Short.MAX_VALUE)
+                    .addComponent(scrollPane)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(eCari)
+                        .addComponent(eCari, javax.swing.GroupLayout.PREFERRED_SIZE, 755, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(bCari))
+                        .addComponent(bCari)
+                        .addGap(0, 4, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(bTambah)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(bUbah)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(18, 18, 18)
                         .addComponent(bHapus)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(18, 18, 18)
                         .addComponent(bBatal)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(bTutup)))
@@ -186,13 +213,13 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(11, 11, 11)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(eCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel1)
+                    .addComponent(eCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(bCari))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(scrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 227, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 349, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(bTambah)
@@ -200,7 +227,7 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
                     .addComponent(bHapus)
                     .addComponent(bBatal)
                     .addComponent(bTutup))
-                .addContainerGap(9, Short.MAX_VALUE))
+                .addGap(21, 21, 21))
         );
 
         pack();
@@ -218,60 +245,69 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
 
     private void bCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bCariActionPerformed
         // TODO add your handling code here:
-        resetTable(" WHERE nama_petugas like '%"+eCari.getText()+"%' OR " 
-                          + "username like '%"+eCari.getText()+"%'");
+        resetTable(eCari.getText());
     }//GEN-LAST:event_bCariActionPerformed
 
     private void bHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bHapusActionPerformed
         // TODO add your handling code here:
-        int i = tPetugas.getSelectedRow();
-                int pilihan = JOptionPane.showConfirmDialog(
-                              null,
-                              "Yakin mau hapus ?",
-                              "Konfirmasi hapus",
-                              JOptionPane.YES_NO_OPTION);
-                if (pilihan==0){
-                    if (i>=0){
-                    try {
-                        TableModel model = tPetugas.getModel();
-                        Koneksi koneksi = new Koneksi ();
-                        Connection con = koneksi.getConnection();
-                        String executeQuery = "delete from petugas where id =?";
-                        PreparedStatement ps = con.prepareStatement(executeQuery);
-                        ps.setString(1, model.getValueAt(i,0).toString());
-                        ps.executeUpdate();
-                    } catch (SQLException ex) {
-                        System.err.println(ex);
-                    }
-                    }else {
-                        JOptionPane.showMessageDialog(null, "Pilih data yang ingin dihapus");
-                     }
-                }
-                resetTable("");
+        int i = tAnggota.getSelectedRow();
+        int pilihan = JOptionPane.showConfirmDialog(
+            null,
+            "Yakin mau hapus ?",
+            "Konfiramsi hapus",
+            JOptionPane.YES_NO_OPTION);
+        if(pilihan==0){
+            if(i>=0){
+                try{
+                    TableModel Model = tAnggota.getModel();
+                    Koneksi koneksi = new Koneksi();
+                    Connection con = koneksi.getConnection();
+                    String executeQuery = "delete from anggota where id =?";
+                    PreparedStatement ps = con.prepareStatement(executeQuery);
+                    ps.setString(1,Model.getValueAt(i,0).toString());
+                    ps.executeUpdate();
+                } catch (SQLException ex){
+                    System.err.println(ex);
+                  }
+            }else {
+                JOptionPane.showMessageDialog(null, "Pilih data yang ingin dihapus");
+            }
+        }
+        resetTable("");
     }//GEN-LAST:event_bHapusActionPerformed
 
     private void bTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bTambahActionPerformed
         // TODO add your handling code here:
-        PetugasTambahFrame petugasTambahFrame = new PetugasTambahFrame();
-        petugasTambahFrame.setVisible(true);
+        AnggotaTambahFrame anggotaTambahFrame = new AnggotaTambahFrame();
+        anggotaTambahFrame.setVisible(true);
     }//GEN-LAST:event_bTambahActionPerformed
 
     private void bUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bUbahActionPerformed
         // TODO add your handling code here:
-        int i = tPetugas.getSelectedRow();
-        if(i>=0){
-             TableModel model = tPetugas.getModel();
-             petugas = new Petugas ();
-             petugas.setId(Integer.parseInt(model.getValueAt(i,0).toString()));
-             petugas.setNamaPetugas(model.getValueAt(i,1).toString());
-             petugas.setUsername(model.getValueAt(i,2).toString());
-             petugas.setPassword(model.getValueAt(i,3).toString());
-             PetugasTambahFrame petugasTambahFrame = new PetugasTambahFrame(petugas);
-             petugasTambahFrame.setVisible(true);      
-             
-        }else{
-             JOptionPane.showMessageDialog(null,"Pilih data yang ingin diubah");
-         }
+        int i = tAnggota.getSelectedRow();
+        if (i>=0){
+            try {
+                TableModel model = tAnggota.getModel();
+                anggota = new Anggota ();
+                anggota.setId(model.getValueAt(i,0).toString());
+                anggota.setNamaAnggota(model.getValueAt(i,1).toString());
+                anggota.setJenisKelamin(model.getValueAt(i,2).toString());
+                anggota.setTanggalLahir(model.getValueAt(i,3).toString());
+                anggota.setAgama(model.getValueAt(i,4).toString());
+                anggota.setPetugas(new Petugas
+                            (Integer.parseInt(model.getValueAt(i,5).toString()),
+                                    model.getValueAt(i,6).toString()));
+                Blob blob = (Blob) model.getValueAt(i,7);
+                anggota.setFotoAnggota(blob);
+                
+                AnggotaTambahFrame anggotaTambahFrame = new AnggotaTambahFrame(anggota);
+                anggotaTambahFrame.setVisible(true);
+            } catch (IOException ex) {
+                Logger.getLogger(AnggotaTampilFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else {
+            JOptionPane.showMessageDialog(null, "Pilih data yang ingin diubah");
+        }
     }//GEN-LAST:event_bUbahActionPerformed
 
     private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
@@ -296,20 +332,20 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(PetugasTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnggotaTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(PetugasTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnggotaTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(PetugasTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnggotaTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(PetugasTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnggotaTampilFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new PetugasTampilFrame().setVisible(true);
+                new AnggotaTampilFrame().setVisible(true);
             }
         });
     }
@@ -324,6 +360,6 @@ public class PetugasTampilFrame extends javax.swing.JFrame {
     private javax.swing.JTextField eCari;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane scrollPane;
-    private javax.swing.JTable tPetugas;
+    private javax.swing.JTable tAnggota;
     // End of variables declaration//GEN-END:variables
 }
